@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { Flame, Dumbbell, Calendar, Scale } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { workoutProgram } from '../data/workoutProgram';
-import ProfileSwitcher from '../components/ProfileSwitcher';
 import type { TabName } from '../components/Navigation';
 
 interface DashboardProps {
@@ -125,7 +124,6 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <p className="text-text-secondary text-sm capitalize">{formatDateFR(today)}</p>
           </div>
         </div>
-        <ProfileSwitcher />
       </div>
 
       {/* Macros summary card */}

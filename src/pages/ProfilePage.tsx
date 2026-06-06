@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { User, Target, Calendar, Info, ChevronRight, AlertTriangle, Plus, Trash2, Check, type LucideIcon } from 'lucide-react';
-import { useStore, PROFILE_COLORS } from '../store/useStore';
+import { User, Target, Calendar, Info, ChevronRight, AlertTriangle, LogOut, type LucideIcon } from 'lucide-react';
+import { useStore } from '../store/useStore';
 import type { UserProfile } from '../types';
 
 // ── Editable field ────────────────────────────────────────────────────────────
@@ -62,189 +62,24 @@ function Section({ title, icon: Icon, children }: { title: string; icon: LucideI
   );
 }
 
-// ── New profile form ──────────────────────────────────────────────────────────
-
-const defaultNewProfile: UserProfile = {
-  name: '',
-  age: 35,
-  gender: 'femme',
-  heightCm: 165,
-  weightKg: 65,
-  targetWeightKg: 58,
-  targetBodyFatPct: 22,
-  startDate: new Date().toISOString().split('T')[0],
-  dailyCalorieTarget: 1400,
-  dailyProteinTarget: 80,
-};
-
-function calcSuggestedCalories(info: UserProfile): { tdee: number; suggested: number; protein: number } {
-  const bmr =
-    info.gender === 'femme'
-      ? 10 * info.weightKg + 6.25 * info.heightCm - 5 * info.age - 161
-      : 10 * info.weightKg + 6.25 * info.heightCm - 5 * info.age + 5;
-  const tdee = Math.round(bmr * 1.375);
-  const suggested = Math.max(tdee - 500, 1200);
-  const protein = Math.round(info.targetWeightKg * 2.0);
-  return { tdee, suggested, protein };
-}
-
-interface NewProfileFormProps {
-  onCancel: () => void;
-  onSave: (info: UserProfile) => void;
-}
-
-function NewProfileForm({ onCancel, onSave }: NewProfileFormProps) {
-  const [form, setForm] = useState<UserProfile>(defaultNewProfile);
-  const { tdee, suggested, protein } = calcSuggestedCalories(form);
-
-  const set = (key: keyof UserProfile, value: string | number) =>
-    setForm((f) => ({ ...f, [key]: value }));
-
-  const setNum = (key: keyof UserProfile) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    set(key, parseFloat(e.target.value) || 0);
-
-  const handleSave = () => {
-    if (!form.name.trim()) return;
-    onSave({ ...form, dailyCalorieTarget: suggested, dailyProteinTarget: protein });
-  };
-
-  return (
-    <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden border border-white/10">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-        <h3 className="text-white font-semibold text-sm">Nouveau profil</h3>
-        <button onClick={onCancel} className="text-text-secondary text-sm">Annuler</button>
-      </div>
-
-      <div className="px-4 py-2 space-y-0">
-        {/* Name */}
-        <div className="flex items-center justify-between py-3 border-b border-white/10">
-          <span className="text-text-secondary text-sm">Prénom</span>
-          <input
-            type="text"
-            placeholder="Prénom"
-            value={form.name}
-            onChange={(e) => set('name', e.target.value)}
-            className="bg-[#2C2C2E] text-white rounded-lg px-2 py-1 text-sm w-32 text-right border-0 outline-none"
-          />
-        </div>
-
-        {/* Gender */}
-        <div className="flex items-center justify-between py-3 border-b border-white/10">
-          <span className="text-text-secondary text-sm">Genre</span>
-          <div className="flex gap-1">
-            {(['homme', 'femme', 'autre'] as const).map((g) => (
-              <button
-                key={g}
-                onClick={() => set('gender', g)}
-                className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
-                style={{
-                  backgroundColor: form.gender === g ? '#FF6B35' : '#2C2C2E',
-                  color: form.gender === g ? '#fff' : '#8E8E93',
-                }}
-              >
-                {g.charAt(0).toUpperCase() + g.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Age */}
-        <div className="flex items-center justify-between py-3 border-b border-white/10">
-          <span className="text-text-secondary text-sm">Âge</span>
-          <div className="flex items-center gap-1">
-            <input type="number" value={form.age} onChange={setNum('age')}
-              className="bg-[#2C2C2E] text-white rounded-lg px-2 py-1 text-sm w-16 text-right border-0 outline-none" />
-            <span className="text-text-secondary text-sm">ans</span>
-          </div>
-        </div>
-
-        {/* Height */}
-        <div className="flex items-center justify-between py-3 border-b border-white/10">
-          <span className="text-text-secondary text-sm">Taille</span>
-          <div className="flex items-center gap-1">
-            <input type="number" value={form.heightCm} onChange={setNum('heightCm')}
-              className="bg-[#2C2C2E] text-white rounded-lg px-2 py-1 text-sm w-16 text-right border-0 outline-none" />
-            <span className="text-text-secondary text-sm">cm</span>
-          </div>
-        </div>
-
-        {/* Weight */}
-        <div className="flex items-center justify-between py-3 border-b border-white/10">
-          <span className="text-text-secondary text-sm">Poids actuel</span>
-          <div className="flex items-center gap-1">
-            <input type="number" step="0.1" value={form.weightKg} onChange={setNum('weightKg')}
-              className="bg-[#2C2C2E] text-white rounded-lg px-2 py-1 text-sm w-16 text-right border-0 outline-none" />
-            <span className="text-text-secondary text-sm">kg</span>
-          </div>
-        </div>
-
-        {/* Target weight */}
-        <div className="flex items-center justify-between py-3 border-b border-white/10">
-          <span className="text-text-secondary text-sm">Poids cible</span>
-          <div className="flex items-center gap-1">
-            <input type="number" step="0.1" value={form.targetWeightKg} onChange={setNum('targetWeightKg')}
-              className="bg-[#2C2C2E] text-white rounded-lg px-2 py-1 text-sm w-16 text-right border-0 outline-none" />
-            <span className="text-text-secondary text-sm">kg</span>
-          </div>
-        </div>
-
-        {/* Target body fat */}
-        <div className="flex items-center justify-between py-3 border-b border-white/10">
-          <span className="text-text-secondary text-sm">Masse grasse cible</span>
-          <div className="flex items-center gap-1">
-            <input type="number" step="0.5" value={form.targetBodyFatPct} onChange={setNum('targetBodyFatPct')}
-              className="bg-[#2C2C2E] text-white rounded-lg px-2 py-1 text-sm w-16 text-right border-0 outline-none" />
-            <span className="text-text-secondary text-sm">%</span>
-          </div>
-        </div>
-
-        {/* Auto-calculated suggestion */}
-        <div className="py-3">
-          <div className="bg-[#2C2C2E] rounded-xl p-3 space-y-1.5 text-sm">
-            <p className="text-text-secondary text-xs mb-1">Calculé automatiquement :</p>
-            <div className="flex justify-between">
-              <span className="text-text-secondary">TDEE estimé</span>
-              <span className="text-white font-medium">{tdee} kcal/j</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-secondary">Objectif calorique</span>
-              <span className="text-accent font-bold">{suggested} kcal/j</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-secondary">Protéines</span>
-              <span className="text-info font-bold">{protein} g/j</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 pb-4">
-        <button
-          onClick={handleSave}
-          disabled={!form.name.trim()}
-          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-accent text-white font-bold text-sm disabled:opacity-40"
-        >
-          <Check size={16} />
-          Créer le profil
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function initials(name: string) {
   return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
 }
 
-export default function ProfilePage() {
+// ── Main component ────────────────────────────────────────────────────────────
+
+interface ProfilePageProps {
+  onSignOut: () => void;
+}
+
+export default function ProfilePage({ onSignOut }: ProfilePageProps) {
   const {
     profile, updateProfile, getCurrentWeek, weightLog, workoutLog,
-    profiles, activeProfileId, switchProfile, deleteProfile, addProfile,
+    userEmail, userName,
   } = useStore();
 
-  const [showNewForm, setShowNewForm] = useState(false);
   const currentWeek = getCurrentWeek();
   const weeksRemaining = Math.max(8 - currentWeek, 0);
   const currentWeight = weightLog.length > 0 ? weightLog[weightLog.length - 1].weightKg : profile.weightKg;
@@ -270,24 +105,16 @@ export default function ProfilePage() {
   };
 
   const handleReset = () => {
-    if (confirm('Réinitialiser les données de ce profil ? Cette action est irréversible.')) {
-      if (confirm('Dernière confirmation : toutes les données seront supprimées.')) {
+    if (confirm('Réinitialiser les données ? Cette action est irréversible.')) {
+      if (confirm('Dernière confirmation : toutes les données locales seront supprimées.')) {
         localStorage.clear();
         window.location.reload();
       }
     }
   };
 
-  const handleDelete = (id: string, name: string) => {
-    if (confirm(`Supprimer le profil de ${name} ? Toutes ses données seront perdues.`)) {
-      deleteProfile(id);
-    }
-  };
-
-  const handleAddProfile = (info: UserProfile) => {
-    addProfile(info);
-    setShowNewForm(false);
-  };
+  const displayName = userName ?? profile.name;
+  const avatarInitial = initials(displayName);
 
   return (
     <div className="flex flex-col gap-4 px-4 pb-4">
@@ -296,71 +123,34 @@ export default function ProfilePage() {
         <p className="text-text-secondary text-sm">Paramètres et objectifs</p>
       </div>
 
-      {/* ── Profiles section ── */}
+      {/* ── Compte (Google account) ── */}
       <div className="bg-card rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <User size={16} className="text-accent" />
-            <h2 className="text-white font-semibold text-sm">Mes Profils</h2>
-          </div>
-          {profiles.length < 4 && !showNewForm && (
-            <button
-              onClick={() => setShowNewForm(true)}
-              className="flex items-center gap-1 text-accent text-xs font-semibold"
-            >
-              <Plus size={14} /> Ajouter
-            </button>
-          )}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
+          <User size={16} className="text-accent" />
+          <h2 className="text-white font-semibold text-sm">Compte</h2>
         </div>
-
-        <div className="px-4 py-3 flex flex-col gap-2">
-          {profiles.map((p, i) => {
-            const color = PROFILE_COLORS[i % PROFILE_COLORS.length];
-            const isActive = p.id === activeProfileId;
-            return (
-              <button
-                key={p.id}
-                onClick={() => switchProfile(p.id)}
-                className="flex items-center gap-3 p-3 rounded-xl transition-all text-left"
-                style={{ backgroundColor: isActive ? color + '18' : '#2C2C2E' }}
-              >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                  style={{ backgroundColor: color + '33', color }}
-                >
-                  {initials(p.info.name)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-semibold text-sm truncate">{p.info.name}</p>
-                  <p className="text-text-secondary text-xs">
-                    {p.info.age} ans · {p.info.heightCm} cm · {p.info.weightKg} kg
-                  </p>
-                </div>
-                {isActive ? (
-                  <span
-                    className="text-xs font-bold px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: color + '33', color }}
-                  >
-                    Actif
-                  </span>
-                ) : (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(p.id, p.info.name); }}
-                    className="p-1.5 rounded-lg bg-red-500/10 text-red-400"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </button>
-            );
-          })}
+        <div className="px-4 py-3 flex items-center gap-3">
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
+            style={{ backgroundColor: '#FF6B35' }}
+          >
+            {avatarInitial}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-semibold text-sm truncate">{displayName}</p>
+            {userEmail && (
+              <p className="text-text-secondary text-xs truncate">{userEmail}</p>
+            )}
+          </div>
+          <button
+            onClick={onSignOut}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/10 text-red-400 text-sm font-semibold flex-shrink-0"
+          >
+            <LogOut size={14} />
+            Se déconnecter
+          </button>
         </div>
       </div>
-
-      {/* New profile form */}
-      {showNewForm && (
-        <NewProfileForm onCancel={() => setShowNewForm(false)} onSave={handleAddProfile} />
-      )}
 
       {/* Active profile avatar card */}
       <div className="bg-card rounded-2xl p-4 flex items-center gap-4">
@@ -475,11 +265,7 @@ export default function ProfilePage() {
         </div>
         <div className="flex justify-between py-3 border-b border-white/10 text-sm">
           <span className="text-text-secondary">Version</span>
-          <span className="text-white">2.0.0</span>
-        </div>
-        <div className="flex justify-between py-3 border-b border-white/10 text-sm">
-          <span className="text-text-secondary">Profils</span>
-          <span className="text-white">{profiles.length} / 4</span>
+          <span className="text-white">3.0.0</span>
         </div>
         <div className="py-3">
           <button
@@ -491,6 +277,16 @@ export default function ProfilePage() {
           </button>
         </div>
       </Section>
+
+      {/* Sign out bottom button */}
+      <button
+        onClick={onSignOut}
+        className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-sm"
+        style={{ backgroundColor: '#1C1C1E', color: '#FF3B30' }}
+      >
+        <LogOut size={16} />
+        Se déconnecter
+      </button>
     </div>
   );
 }

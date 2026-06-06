@@ -7,8 +7,8 @@ import type {
   WeightEntry,
   MeasurementEntry,
   WorkoutSession,
-  ProfileData,
 } from '../types';
+import { saveCloudData, type CloudData } from '../lib/firestoreSync';
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -35,28 +35,18 @@ const defaultUserProfile: UserProfile = {
   dailyProteinTarget: 100,
 };
 
-export const PROFILE_COLORS = ['#FF6B35', '#007AFF', '#34C759', '#AF52DE'];
-
-export function makeNewProfile(info: UserProfile): ProfileData {
-  return {
-    id: `p-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    info,
-    foodLog: [],
-    workoutLog: [],
-    weightLog: [{ date: today(), weightKg: info.weightKg }],
-    measurements: [],
-    currentWorkoutSession: defaultSession,
-  };
-}
-
 // ── Store types ─────────────────────────────────────────────────────────────
 
 interface StoreState {
-  // Multi-profile core
-  profiles: ProfileData[];
-  activeProfileId: string;
+  // Auth
+  userId: string | null;
+  userEmail: string | null;
+  userName: string | null;
+  syncStatus: 'idle' | 'syncing' | 'error';
+  lastSyncedAt: number;
+  isSyncingFromCloud: boolean;
 
-  // Flat mirrors of the active profile — pages read these directly
+  // Data
   profile: UserProfile;
   foodLog: FoodLogEntry[];
   workoutLog: WorkoutLog[];
@@ -66,12 +56,15 @@ interface StoreState {
 }
 
 interface StoreActions {
-  // Profile management
-  addProfile: (info: UserProfile) => void;
-  switchProfile: (id: string) => void;
-  deleteProfile: (id: string) => void;
+  // Auth actions
+  setAuth: (uid: string, email: string, name: string) => void;
+  clearAuth: () => void;
 
-  // Per-profile mutations (operate on active profile)
+  // Cloud sync
+  loadFromCloud: (data: CloudData) => void;
+  syncToCloud: () => void;
+
+  // Data mutations
   updateProfile: (updates: Partial<UserProfile>) => void;
   addFoodLogEntry: (entry: FoodLogEntry) => void;
   removeFoodLogEntry: (id: string) => void;
@@ -90,139 +83,154 @@ interface StoreActions {
 
 type Store = StoreState & StoreActions;
 
-// ── Helper: sync flat mirrors from a ProfileData ─────────────────────────────
+// ── Debounce timer (module-level) ────────────────────────────────────────────
 
-function mirrorOf(p: ProfileData): Pick<StoreState,
-  'profile' | 'foodLog' | 'workoutLog' | 'weightLog' | 'measurements' | 'currentWorkoutSession'
-> {
-  return {
-    profile: p.info,
-    foodLog: p.foodLog,
-    workoutLog: p.workoutLog,
-    weightLog: p.weightLog,
-    measurements: p.measurements,
-    currentWorkoutSession: p.currentWorkoutSession,
-  };
-}
-
-// Patches the active profile in profiles[] and updates the flat mirrors
-function patchActive(
-  state: StoreState,
-  patcher: (p: ProfileData) => Partial<ProfileData>
-): Partial<StoreState> {
-  const idx = state.profiles.findIndex((p) => p.id === state.activeProfileId);
-  if (idx < 0) return {};
-  const updated: ProfileData = { ...state.profiles[idx], ...patcher(state.profiles[idx]) };
-  const newProfiles = [...state.profiles];
-  newProfiles[idx] = updated;
-  return { profiles: newProfiles, ...mirrorOf(updated) };
-}
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
 
 // ── Store ────────────────────────────────────────────────────────────────────
-
-const initialProfile = makeNewProfile(defaultUserProfile);
 
 export const useStore = create<Store>()(
   persist(
     (set, get) => ({
-      profiles: [initialProfile],
-      activeProfileId: initialProfile.id,
-      ...mirrorOf(initialProfile),
+      // Auth defaults
+      userId: null,
+      userEmail: null,
+      userName: null,
+      syncStatus: 'idle',
+      lastSyncedAt: 0,
+      isSyncingFromCloud: false,
 
-      // ── Profile management ──────────────────────────────────────────────
+      // Data defaults
+      profile: defaultUserProfile,
+      foodLog: [],
+      workoutLog: [],
+      weightLog: [{ date: today(), weightKg: defaultUserProfile.weightKg }],
+      measurements: [],
+      currentWorkoutSession: defaultSession,
 
-      addProfile: (info) => {
-        const newP = makeNewProfile(info);
-        set((state) => ({
-          profiles: [...state.profiles, newP],
-          activeProfileId: newP.id,
-          ...mirrorOf(newP),
-        }));
+      // ── Auth actions ────────────────────────────────────────────────────
+
+      setAuth: (uid, email, name) => {
+        set({ userId: uid, userEmail: email, userName: name });
       },
 
-      switchProfile: (id) => {
-        set((state) => {
-          const p = state.profiles.find((p) => p.id === id);
-          if (!p) return {};
-          return { activeProfileId: id, ...mirrorOf(p) };
+      clearAuth: () => {
+        set({
+          userId: null,
+          userEmail: null,
+          userName: null,
+          syncStatus: 'idle',
+          lastSyncedAt: 0,
         });
       },
 
-      deleteProfile: (id) => {
-        set((state) => {
-          if (state.profiles.length <= 1) return {}; // must keep at least one
-          const newProfiles = state.profiles.filter((p) => p.id !== id);
-          const newActiveId =
-            state.activeProfileId === id ? newProfiles[0].id : state.activeProfileId;
-          const active = newProfiles.find((p) => p.id === newActiveId)!;
-          return { profiles: newProfiles, activeProfileId: newActiveId, ...mirrorOf(active) };
+      // ── Cloud sync ──────────────────────────────────────────────────────
+
+      loadFromCloud: (data: CloudData) => {
+        set({
+          isSyncingFromCloud: true,
+          profile: data.profile,
+          foodLog: data.foodLog,
+          workoutLog: data.workoutLog,
+          weightLog: data.weightLog,
+          measurements: data.measurements,
+          lastSyncedAt: data.updatedAt,
+          syncStatus: 'idle',
         });
+        // Clear flag after state is applied
+        set({ isSyncingFromCloud: false });
+      },
+
+      syncToCloud: () => {
+        const state = get();
+        if (!state.userId) return;
+        if (state.isSyncingFromCloud) return;
+        if (syncTimer) clearTimeout(syncTimer);
+        set({ syncStatus: 'syncing' });
+        syncTimer = setTimeout(async () => {
+          const currentState = get();
+          if (!currentState.userId) return;
+          try {
+            const now = Date.now();
+            await saveCloudData(currentState.userId, {
+              profile: currentState.profile,
+              foodLog: currentState.foodLog,
+              workoutLog: currentState.workoutLog,
+              weightLog: currentState.weightLog,
+              measurements: currentState.measurements,
+              updatedAt: now,
+            });
+            useStore.setState({ syncStatus: 'idle', lastSyncedAt: now });
+          } catch {
+            useStore.setState({ syncStatus: 'error' });
+          }
+        }, 1500);
       },
 
       // ── Mutations ───────────────────────────────────────────────────────
 
-      updateProfile: (updates) =>
-        set((state) =>
-          patchActive(state, (p) => ({ info: { ...p.info, ...updates } }))
-        ),
+      updateProfile: (updates) => {
+        set((state) => ({ profile: { ...state.profile, ...updates } }));
+        get().syncToCloud();
+      },
 
-      addFoodLogEntry: (entry) =>
-        set((state) =>
-          patchActive(state, (p) => ({ foodLog: [...p.foodLog, entry] }))
-        ),
+      addFoodLogEntry: (entry) => {
+        set((state) => ({ foodLog: [...state.foodLog, entry] }));
+        get().syncToCloud();
+      },
 
-      removeFoodLogEntry: (id) =>
-        set((state) =>
-          patchActive(state, (p) => ({ foodLog: p.foodLog.filter((e) => e.id !== id) }))
-        ),
+      removeFoodLogEntry: (id) => {
+        set((state) => ({ foodLog: state.foodLog.filter((e) => e.id !== id) }));
+        get().syncToCloud();
+      },
 
-      logWorkout: (log) =>
-        set((state) =>
-          patchActive(state, (p) => {
-            const existing = p.workoutLog.findIndex((w) => w.id === log.id);
-            const newLog =
-              existing >= 0
-                ? p.workoutLog.map((w, i) => (i === existing ? log : w))
-                : [...p.workoutLog, log];
-            return { workoutLog: newLog };
-          })
-        ),
+      logWorkout: (log) => {
+        set((state) => {
+          const existing = state.workoutLog.findIndex((w) => w.id === log.id);
+          const newLog =
+            existing >= 0
+              ? state.workoutLog.map((w, i) => (i === existing ? log : w))
+              : [...state.workoutLog, log];
+          return { workoutLog: newLog };
+        });
+        get().syncToCloud();
+      },
 
-      addWeightEntry: (entry) =>
-        set((state) =>
-          patchActive(state, (p) => {
-            const existing = p.weightLog.findIndex((w) => w.date === entry.date);
-            const newLog =
-              existing >= 0
-                ? p.weightLog.map((w, i) => (i === existing ? entry : w))
-                : [...p.weightLog, entry].sort((a, b) => a.date.localeCompare(b.date));
-            return { weightLog: newLog };
-          })
-        ),
+      addWeightEntry: (entry) => {
+        set((state) => {
+          const existing = state.weightLog.findIndex((w) => w.date === entry.date);
+          const newLog =
+            existing >= 0
+              ? state.weightLog.map((w, i) => (i === existing ? entry : w))
+              : [...state.weightLog, entry].sort((a, b) => a.date.localeCompare(b.date));
+          return { weightLog: newLog };
+        });
+        get().syncToCloud();
+      },
 
-      addMeasurement: (entry) =>
-        set((state) =>
-          patchActive(state, (p) => {
-            const existing = p.measurements.findIndex((m) => m.date === entry.date);
-            const newList =
-              existing >= 0
-                ? p.measurements.map((m, i) => (i === existing ? { ...m, ...entry } : m))
-                : [...p.measurements, entry].sort((a, b) => a.date.localeCompare(b.date));
-            return { measurements: newList };
-          })
-        ),
+      addMeasurement: (entry) => {
+        set((state) => {
+          const existing = state.measurements.findIndex((m) => m.date === entry.date);
+          const newList =
+            existing >= 0
+              ? state.measurements.map((m, i) => (i === existing ? { ...m, ...entry } : m))
+              : [...state.measurements, entry].sort((a, b) => a.date.localeCompare(b.date));
+          return { measurements: newList };
+        });
+        get().syncToCloud();
+      },
 
-      setCurrentWorkoutSession: (session) =>
-        set((state) =>
-          patchActive(state, (p) => ({
-            currentWorkoutSession: { ...p.currentWorkoutSession, ...session },
-          }))
-        ),
+      setCurrentWorkoutSession: (session) => {
+        set((state) => ({
+          currentWorkoutSession: { ...state.currentWorkoutSession, ...session },
+        }));
+        // currentWorkoutSession is ephemeral — not synced
+      },
 
-      clearCurrentWorkoutSession: () =>
-        set((state) =>
-          patchActive(state, () => ({ currentWorkoutSession: defaultSession }))
-        ),
+      clearCurrentWorkoutSession: () => {
+        set({ currentWorkoutSession: defaultSession });
+        get().syncToCloud();
+      },
 
       // ── Selectors ───────────────────────────────────────────────────────
 
@@ -260,30 +268,47 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'fitlife-storage',
-      version: 2,
-      // Migrate from v1 (flat single-profile) to v2 (multi-profile)
+      version: 3,
+      // Only persist data fields (not transient auth/sync state)
+      partialize: (state) => ({
+        profile: state.profile,
+        foodLog: state.foodLog,
+        workoutLog: state.workoutLog,
+        weightLog: state.weightLog,
+        measurements: state.measurements,
+        currentWorkoutSession: state.currentWorkoutSession,
+        lastSyncedAt: state.lastSyncedAt,
+      }),
       migrate: (persisted: unknown, version: number) => {
+        const old = persisted as Record<string, unknown>;
+
         if (version < 2) {
-          const old = persisted as Record<string, unknown>;
+          // v1 → flat single profile (already flat, just ensure gender field)
           if (old.profile) {
-            const legacyProfile: ProfileData = {
-              id: 'p-legacy',
-              info: old.profile as UserProfile,
-              foodLog: (old.foodLog as FoodLogEntry[]) ?? [],
-              workoutLog: (old.workoutLog as WorkoutLog[]) ?? [],
-              weightLog: (old.weightLog as WeightEntry[]) ?? [],
-              measurements: (old.measurements as MeasurementEntry[]) ?? [],
-              currentWorkoutSession: defaultSession,
-            };
-            // Ensure gender field exists (added in v2)
-            if (!legacyProfile.info.gender) legacyProfile.info.gender = 'homme';
+            const p = old.profile as UserProfile;
+            if (!p.gender) p.gender = 'homme';
+          }
+          return old;
+        }
+
+        if (version < 3) {
+          // v2 → multi-profile to single profile
+          if (old.profiles && Array.isArray(old.profiles) && old.profiles.length > 0) {
+            const firstProfile = old.profiles[0] as Record<string, unknown>;
+            const info = (firstProfile.info ?? {}) as UserProfile;
+            if (!info.gender) info.gender = 'homme';
             return {
-              profiles: [legacyProfile],
-              activeProfileId: legacyProfile.id,
-              ...mirrorOf(legacyProfile),
+              profile: info,
+              foodLog: (firstProfile.foodLog as FoodLogEntry[]) ?? [],
+              workoutLog: (firstProfile.workoutLog as WorkoutLog[]) ?? [],
+              weightLog: (firstProfile.weightLog as WeightEntry[]) ?? [],
+              measurements: (firstProfile.measurements as MeasurementEntry[]) ?? [],
+              currentWorkoutSession: defaultSession,
+              lastSyncedAt: 0,
             };
           }
         }
+
         return persisted;
       },
     }

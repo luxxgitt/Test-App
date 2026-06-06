@@ -114,17 +114,6 @@ export interface WorkoutSession {
   completedSets: { exerciseId: string; reps: number }[];
 }
 
-export interface ProfileData {
-  id: string;
-  info: UserProfile;
-  foodLog: FoodLogEntry[];
-  workoutLog: WorkoutLog[];
-  weightLog: WeightEntry[];
-  measurements: MeasurementEntry[];
-  currentWorkoutSession: WorkoutSession;
-}
-
-// Legacy — kept for Zustand persist migration
 export interface AppState {
   profile: UserProfile;
   foodLog: FoodLogEntry[];
