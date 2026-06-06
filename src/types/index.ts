@@ -1,6 +1,7 @@
 export interface UserProfile {
   name: string;
   age: number;
+  gender: 'homme' | 'femme' | 'autre';
   heightCm: number;
   weightKg: number;
   targetWeightKg: number;
@@ -103,19 +104,32 @@ export interface MeasurementEntry {
   thighCm?: number;
 }
 
+export interface WorkoutSession {
+  active: boolean;
+  dayId: string | null;
+  weekNumber: number;
+  currentExerciseIndex: number;
+  currentSet: number;
+  startTime: string | null;
+  completedSets: { exerciseId: string; reps: number }[];
+}
+
+export interface ProfileData {
+  id: string;
+  info: UserProfile;
+  foodLog: FoodLogEntry[];
+  workoutLog: WorkoutLog[];
+  weightLog: WeightEntry[];
+  measurements: MeasurementEntry[];
+  currentWorkoutSession: WorkoutSession;
+}
+
+// Legacy — kept for Zustand persist migration
 export interface AppState {
   profile: UserProfile;
   foodLog: FoodLogEntry[];
   workoutLog: WorkoutLog[];
   weightLog: WeightEntry[];
   measurements: MeasurementEntry[];
-  currentWorkoutSession: {
-    active: boolean;
-    dayId: string | null;
-    weekNumber: number;
-    currentExerciseIndex: number;
-    currentSet: number;
-    startTime: string | null;
-    completedSets: { exerciseId: string; reps: number }[];
-  };
+  currentWorkoutSession: WorkoutSession;
 }

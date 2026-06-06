@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Flame, Dumbbell, Calendar, Scale } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { workoutProgram } from '../data/workoutProgram';
+import ProfileSwitcher from '../components/ProfileSwitcher';
 import type { TabName } from '../components/Navigation';
 
 interface DashboardProps {
@@ -115,11 +116,16 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   return (
     <div className="flex flex-col gap-4 px-4 pb-4">
       {/* Header */}
-      <div className="pt-2">
-        <h1 className="text-2xl font-bold text-white">
-          Bonjour {profile.name.split(' ')[0]} 👋
-        </h1>
-        <p className="text-text-secondary text-sm capitalize">{formatDateFR(today)}</p>
+      <div className="pt-2 flex flex-col gap-2">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">
+              Bonjour {profile.name.split(' ')[0]} 👋
+            </h1>
+            <p className="text-text-secondary text-sm capitalize">{formatDateFR(today)}</p>
+          </div>
+        </div>
+        <ProfileSwitcher />
       </div>
 
       {/* Macros summary card */}
