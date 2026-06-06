@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { X, ExternalLink, CheckCircle, SkipForward, Trophy } from 'lucide-react';
 import RestTimer from './RestTimer';
 import { exercises } from '../../data/exercises';
-import { workoutProgram } from '../../data/workoutProgram';
+import { workoutProgram, estimateCaloriesBurned } from '../../data/workoutProgram';
 import type { WorkoutSet } from '../../types';
 
 interface WorkoutSessionProps {
@@ -97,6 +97,7 @@ export default function WorkoutSession({ weekNumber, dayId, onComplete, onExit }
   if (completed) {
     const durationMinutes = Math.round((Date.now() - startTime) / 60000);
     const totalSets = exerciseLogs.reduce((sum, log) => sum + log.setsCompleted, 0);
+    const caloriesBurned = estimateCaloriesBurned(weekNumber, durationMinutes);
 
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6">
@@ -106,17 +107,21 @@ export default function WorkoutSession({ weekNumber, dayId, onComplete, onExit }
           <p className="text-text-secondary">Excellent travail, continuez ainsi !</p>
         </div>
 
-        <div className="w-full bg-card rounded-2xl p-5 grid grid-cols-3 gap-4 text-center">
+        <div className="w-full bg-card rounded-2xl p-5 grid grid-cols-4 gap-3 text-center">
           <div>
-            <p className="text-2xl font-bold text-accent">{durationMinutes}</p>
-            <p className="text-text-secondary text-xs">minutes</p>
+            <p className="text-xl font-bold text-accent">{durationMinutes}</p>
+            <p className="text-text-secondary text-xs">min</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-info">{totalSets}</p>
+            <p className="text-xl font-bold text-orange-400">{caloriesBurned}</p>
+            <p className="text-text-secondary text-xs">kcal 🔥</p>
+          </div>
+          <div>
+            <p className="text-xl font-bold text-info">{totalSets}</p>
             <p className="text-text-secondary text-xs">séries</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-success">{totalExercises}</p>
+            <p className="text-xl font-bold text-success">{totalExercises}</p>
             <p className="text-text-secondary text-xs">exercices</p>
           </div>
         </div>

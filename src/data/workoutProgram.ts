@@ -3,6 +3,12 @@ import type { WeekProgram } from '../types';
 const REST_BEGINNER = 60;
 const REST_MODERATE = 45;
 
+// MET-based calorie estimate (kcal = MET × weightKg × durationHours)
+export function estimateCaloriesBurned(weekNumber: number, durationMinutes: number, weightKg = 90): number {
+  const met = weekNumber <= 2 ? 2.8 : weekNumber <= 4 ? 3.8 : weekNumber <= 6 ? 5.0 : 6.5;
+  return Math.round(met * weightKg * (durationMinutes / 60));
+}
+
 // Helper to build a workout day
 const makeDay = (
   id: string,

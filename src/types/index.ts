@@ -81,6 +81,7 @@ export interface WorkoutLog {
   dayId: string;
   completed: boolean;
   durationMinutes: number;
+  caloriesBurned: number;
   exerciseLogs: {
     exerciseId: string;
     setsCompleted: number;

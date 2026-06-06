@@ -124,7 +124,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
       {/* Macros summary card */}
       <div className="bg-card rounded-2xl p-4">
-        <h2 className="text-white font-semibold mb-4">Calories aujourd\'hui</h2>
+        <h2 className="text-white font-semibold mb-4">Calories aujourd'hui</h2>
         <div className="flex items-center gap-4">
           <CalorieRing consumed={macros.calories} target={profile.dailyCalorieTarget} />
           <div className="flex flex-col gap-2.5 flex-1">
@@ -198,7 +198,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             onClick={() => onNavigate('workout')}
             className="mt-4 w-full py-3 rounded-xl bg-accent text-white font-bold text-sm"
           >
-            Commencer l\'entraînement
+            Commencer l'entraînement
           </button>
         </div>
       )}
@@ -274,7 +274,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           ))
         ) : (
           <div className="py-3 text-center">
-            <p className="text-text-secondary text-sm">Aucun aliment enregistré aujourd\'hui</p>
+            <p className="text-text-secondary text-sm">Aucun aliment enregistré aujourd'hui</p>
             <button
               onClick={() => onNavigate('nutrition')}
               className="text-accent text-sm font-medium mt-1"

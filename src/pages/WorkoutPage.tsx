@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronRight, Clock, Dumbbell, CheckCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { workoutProgram, estimateWorkoutDuration } from '../data/workoutProgram';
+import { workoutProgram, estimateWorkoutDuration, estimateCaloriesBurned } from '../data/workoutProgram';
 import WorkoutSession from '../components/workout/WorkoutSession';
 import ExerciseCard from '../components/workout/ExerciseCard';
 import { exercises } from '../data/exercises';
@@ -49,6 +49,7 @@ export default function WorkoutPage() {
       dayId: currentWorkoutSession.dayId,
       completed: true,
       durationMinutes,
+      caloriesBurned: estimateCaloriesBurned(currentWorkoutSession.weekNumber, durationMinutes),
       exerciseLogs,
     };
     logWorkout(log);
@@ -134,6 +135,7 @@ export default function WorkoutPage() {
               .getState()
               .workoutLog.some((w) => w.date === todayStr && w.dayId === day.id && w.completed);
             const estimatedDuration = estimateWorkoutDuration(dayIndex, selectedWeek);
+            const estimatedCalories = estimateCaloriesBurned(selectedWeek, estimatedDuration);
 
             return (
               <div
@@ -177,6 +179,9 @@ export default function WorkoutPage() {
                       <span className="text-text-secondary text-xs flex items-center gap-1">
                         <Clock size={10} />
                         ~{estimatedDuration} min
+                      </span>
+                      <span className="text-orange-400 text-xs flex items-center gap-1">
+                        🔥 ~{estimatedCalories} kcal
                       </span>
                     </div>
                   </div>
