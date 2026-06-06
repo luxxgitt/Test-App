@@ -1,25 +1,34 @@
-import { useState } from 'react';
-import { signInWithPopup } from 'firebase/auth';
+import { useState, useEffect } from 'react';
+import { signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleGoogleSignIn = async () => {
+  // Handle the redirect result when the page reloads after Google auth
+  useEffect(() => {
+    setLoading(true);
+    getRedirectResult(auth)
+      .then((result) => {
+        if (!result) setLoading(false);
+        // If result exists, onAuthStateChanged in App.tsx takes over
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Erreur de connexion';
+        setError(msg);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleGoogleSignIn = () => {
     setLoading(true);
     setError(null);
-    try {
-      await signInWithPopup(auth, googleProvider);
-      // onAuthStateChanged in App.tsx will handle the rest
-    } catch (err: unknown) {
+    signInWithRedirect(auth, googleProvider).catch((err: unknown) => {
       const msg = err instanceof Error ? err.message : 'Erreur de connexion';
-      // Ignore popup closed by user
-      if (!(err instanceof Error) || !err.message.includes('popup-closed')) {
-        setError(msg);
-      }
+      setError(msg);
       setLoading(false);
-    }
+    });
   };
 
   return (
