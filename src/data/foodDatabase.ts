@@ -951,6 +951,20 @@ export const foodDatabase: FoodItem[] = [
     category: 'Céréales & Féculents',
     per100g: { calories: 380, protein: 14, fat: 4.5, carbs: 72, sugar: 1, fiber: 5.5 },
   },
+  {
+    id: 'crepes',
+    nameFR: 'Crêpes (nature)',
+    nameEN: 'Crêpes (plain)',
+    category: 'Céréales & Féculents',
+    per100g: { calories: 215, protein: 7, fat: 8, carbs: 28, sugar: 4, fiber: 1 },
+  },
+  {
+    id: 'croissant',
+    nameFR: 'Croissant (beurre)',
+    nameEN: 'Butter Croissant',
+    category: 'Céréales & Féculents',
+    per100g: { calories: 406, protein: 8.2, fat: 21, carbs: 46, sugar: 11, fiber: 1.7 },
+  },
 ];
 
 export const getFoodById = (id: string): FoodItem | undefined => {

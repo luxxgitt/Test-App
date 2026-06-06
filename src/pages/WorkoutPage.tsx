@@ -161,6 +161,9 @@ export default function WorkoutPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-white font-semibold">{day.dayName}</p>
+                      <span className="text-text-secondary text-xs">
+                        {(['Lundi', 'Mardi', 'Jeudi', 'Samedi'])[dayIndex]}
+                      </span>
                       {isCompletedToday && (
                         <span className="text-success text-xs font-semibold">✓ Fait</span>
                       )}
