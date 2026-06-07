@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
-import { signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
+
+// iOS PWA standalone mode blocks popups — use redirect only there
+const isIOSStandalone =
+  typeof window !== 'undefined' &&
+  (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Handle the redirect result when the page reloads after Google auth
+  // On iOS standalone, handle the redirect result after returning from Google
   useEffect(() => {
+    if (!isIOSStandalone) return;
     setLoading(true);
     getRedirectResult(auth)
       .then((result) => {
@@ -21,14 +27,22 @@ export default function LoginPage() {
       });
   }, []);
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     setLoading(true);
     setError(null);
-    signInWithRedirect(auth, googleProvider).catch((err: unknown) => {
+    try {
+      if (isIOSStandalone) {
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        await signInWithPopup(auth, googleProvider);
+      }
+    } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur de connexion';
-      setError(msg);
+      if (!(err instanceof Error) || !err.message.includes('popup-closed')) {
+        setError(msg);
+      }
       setLoading(false);
-    });
+    }
   };
 
   return (
