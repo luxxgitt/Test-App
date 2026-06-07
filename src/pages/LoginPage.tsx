@@ -47,10 +47,18 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-dvh flex flex-col items-center justify-center px-6"
+      className="min-h-dvh flex flex-col items-center justify-center px-6 relative overflow-hidden"
       style={{ backgroundColor: '#0D0D0D' }}
     >
-      <div className="w-full max-w-sm flex flex-col items-center gap-6">
+      {/* Background photo */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: 'url(/Test-App/icon-512.png)' }}
+      />
+      {/* Dark overlay */}
+      <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0,0,0,0.62)' }} />
+
+      <div className="w-full max-w-sm flex flex-col items-center gap-6 relative z-10">
         {/* Logo */}
         <div className="flex flex-col items-center gap-2">
           <span className="text-7xl">💪</span>
