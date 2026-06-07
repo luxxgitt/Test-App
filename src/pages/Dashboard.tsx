@@ -61,6 +61,7 @@ function CalorieRing({ consumed, target }: CalorieRingProps) {
 export default function Dashboard({ onNavigate }: DashboardProps) {
   const {
     profile,
+    userName,
     foodLog,
     workoutLog,
     weightLog,
@@ -68,6 +69,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     getCurrentWeek,
     getCompletedWorkoutDates,
   } = useStore();
+
+  const firstName = (userName ?? profile.name).split(' ')[0];
 
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
@@ -119,7 +122,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">
-              Bonjour {profile.name.split(' ')[0]} 👋
+              Bonjour {firstName} 👋
             </h1>
             <p className="text-text-secondary text-sm capitalize">{formatDateFR(today)}</p>
           </div>

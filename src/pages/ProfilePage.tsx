@@ -197,6 +197,35 @@ export default function ProfilePage({ onSignOut }: ProfilePageProps) {
         <EditableField label="Âge" value={profile.age} unit="ans" type="number" onSave={up('age')} />
         <EditableField label="Taille" value={profile.heightCm} unit="cm" type="number" step="0.5" onSave={up('heightCm')} />
         <EditableField label="Poids actuel" value={profile.weightKg} unit="kg" type="number" step="0.1" onSave={up('weightKg')} />
+        {profile.fitnessGoal && (
+          <div className="flex items-center justify-between py-3 border-b border-white/10">
+            <span className="text-text-secondary text-sm">Objectif</span>
+            <span className="text-white font-medium text-sm">
+              {profile.fitnessGoal === 'perte-poids' ? 'Perte de poids'
+                : profile.fitnessGoal === 'prise-muscle' ? 'Prise de muscle'
+                : profile.fitnessGoal === 'maintien' ? 'Maintien de forme'
+                : 'Endurance'}
+            </span>
+          </div>
+        )}
+        {profile.workoutType && (
+          <div className="flex items-center justify-between py-3 border-b border-white/10">
+            <span className="text-text-secondary text-sm">Activité</span>
+            <span className="text-white font-medium text-sm">
+              {profile.workoutType === 'calisthenics' ? 'Calisthenics / Gym'
+                : profile.workoutType === 'yoga' ? 'Yoga'
+                : profile.workoutType === 'pilates-reformer' ? 'Pilates / Reformer'
+                : profile.workoutType === 'course-pied' ? 'Course à pied'
+                : profile.workoutType === 'cyclisme' ? 'Cyclisme'
+                : profile.workoutType === 'tennis' ? 'Tennis'
+                : profile.workoutType === 'football' ? 'Football'
+                : profile.workoutType === 'natation' ? 'Natation'
+                : profile.workoutType === 'hiit' ? 'HIIT'
+                : profile.workoutType === 'musculation' ? 'Musculation'
+                : 'Autre'}
+            </span>
+          </div>
+        )}
       </Section>
 
       {/* Goals */}

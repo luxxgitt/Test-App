@@ -7,6 +7,7 @@ import type {
   WeightEntry,
   MeasurementEntry,
   WorkoutSession,
+  ActivityLog,
 } from '../types';
 import { saveCloudData, type CloudData } from '../lib/firestoreSync';
 
@@ -53,6 +54,7 @@ interface StoreState {
   weightLog: WeightEntry[];
   measurements: MeasurementEntry[];
   currentWorkoutSession: WorkoutSession;
+  activityLog: ActivityLog[];
 }
 
 interface StoreActions {
@@ -73,6 +75,9 @@ interface StoreActions {
   addMeasurement: (entry: MeasurementEntry) => void;
   setCurrentWorkoutSession: (session: Partial<WorkoutSession>) => void;
   clearCurrentWorkoutSession: () => void;
+  addActivityLog: (entry: ActivityLog) => void;
+  removeActivityLog: (id: string) => void;
+  completeOnboarding: (profileUpdates: Partial<UserProfile>) => void;
 
   // Selectors
   getTodaysFoodLog: () => FoodLogEntry[];
@@ -107,11 +112,19 @@ export const useStore = create<Store>()(
       weightLog: [{ date: today(), weightKg: defaultUserProfile.weightKg }],
       measurements: [],
       currentWorkoutSession: defaultSession,
+      activityLog: [],
 
       // ── Auth actions ────────────────────────────────────────────────────
 
       setAuth: (uid, email, name) => {
-        set({ userId: uid, userEmail: email, userName: name });
+        set((state) => ({
+          userId: uid,
+          userEmail: email,
+          userName: name,
+          profile: state.profile.name === 'Utilisateur'
+            ? { ...state.profile, name: name.split(' ')[0] }
+            : state.profile,
+        }));
       },
 
       clearAuth: () => {
@@ -134,6 +147,7 @@ export const useStore = create<Store>()(
           workoutLog: data.workoutLog,
           weightLog: data.weightLog,
           measurements: data.measurements,
+          activityLog: data.activityLog ?? [],
           lastSyncedAt: data.updatedAt,
           syncStatus: 'idle',
         });
@@ -158,6 +172,7 @@ export const useStore = create<Store>()(
               workoutLog: currentState.workoutLog,
               weightLog: currentState.weightLog,
               measurements: currentState.measurements,
+              activityLog: currentState.activityLog,
               updatedAt: now,
             });
             useStore.setState({ syncStatus: 'idle', lastSyncedAt: now });
@@ -232,6 +247,23 @@ export const useStore = create<Store>()(
         get().syncToCloud();
       },
 
+      addActivityLog: (entry) => {
+        set((state) => ({ activityLog: [...state.activityLog, entry] }));
+        get().syncToCloud();
+      },
+
+      removeActivityLog: (id) => {
+        set((state) => ({ activityLog: state.activityLog.filter((e) => e.id !== id) }));
+        get().syncToCloud();
+      },
+
+      completeOnboarding: (profileUpdates) => {
+        set((state) => ({
+          profile: { ...state.profile, ...profileUpdates, onboardingComplete: true },
+        }));
+        get().syncToCloud();
+      },
+
       // ── Selectors ───────────────────────────────────────────────────────
 
       getTodaysFoodLog: () => {
@@ -277,6 +309,7 @@ export const useStore = create<Store>()(
         weightLog: state.weightLog,
         measurements: state.measurements,
         currentWorkoutSession: state.currentWorkoutSession,
+        activityLog: state.activityLog,
         lastSyncedAt: state.lastSyncedAt,
       }),
       migrate: (persisted: unknown, version: number) => {
@@ -304,9 +337,15 @@ export const useStore = create<Store>()(
               weightLog: (firstProfile.weightLog as WeightEntry[]) ?? [],
               measurements: (firstProfile.measurements as MeasurementEntry[]) ?? [],
               currentWorkoutSession: defaultSession,
+              activityLog: [],
               lastSyncedAt: 0,
             };
           }
+        }
+
+        // Ensure activityLog exists for any persisted state
+        if (!old.activityLog) {
+          old.activityLog = [];
         }
 
         return persisted;

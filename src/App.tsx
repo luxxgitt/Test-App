@@ -10,6 +10,7 @@ import NutritionPage from './pages/NutritionPage';
 import ProgressPage from './pages/ProgressPage';
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
+import OnboardingPage from './pages/OnboardingPage';
 
 // ── Sync status dot ──────────────────────────────────────────────────────────
 
@@ -45,7 +46,7 @@ export default function App() {
   const [authChecked, setAuthChecked] = useState(false);
   const [authedUser, setAuthedUser] = useState<{ uid: string; email: string; name: string } | null>(null);
 
-  const { setAuth, clearAuth, loadFromCloud } = useStore();
+  const { setAuth, clearAuth, loadFromCloud, profile } = useStore();
   const unsubscribeSnapshotRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -123,6 +124,11 @@ export default function App() {
   // Not signed in
   if (!authedUser) {
     return <LoginPage />;
+  }
+
+  // Signed in but onboarding not complete
+  if (!profile.onboardingComplete) {
+    return <OnboardingPage onComplete={() => {}} />;
   }
 
   // Signed in — show main app

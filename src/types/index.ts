@@ -9,6 +9,10 @@ export interface UserProfile {
   startDate: string; // ISO date
   dailyCalorieTarget: number;
   dailyProteinTarget: number;
+  workoutType?: 'calisthenics' | 'yoga' | 'pilates-reformer' | 'course-pied' | 'cyclisme' | 'tennis' | 'football' | 'natation' | 'hiit' | 'musculation' | 'autre';
+  fitnessGoal?: 'perte-poids' | 'prise-muscle' | 'maintien' | 'endurance';
+  fitnessLevel?: 'débutant' | 'intermédiaire' | 'avancé';
+  onboardingComplete?: boolean;
 }
 
 export interface Exercise {
@@ -104,6 +108,17 @@ export interface MeasurementEntry {
   thighCm?: number;
 }
 
+export interface ActivityLog {
+  id: string;
+  date: string;
+  activityType: string;
+  activityLabel: string;
+  durationMinutes: number;
+  caloriesBurned: number;
+  intensity: 'légère' | 'modérée' | 'intense';
+  notes?: string;
+}
+
 export interface WorkoutSession {
   active: boolean;
   dayId: string | null;
@@ -121,4 +136,5 @@ export interface AppState {
   weightLog: WeightEntry[];
   measurements: MeasurementEntry[];
   currentWorkoutSession: WorkoutSession;
+  activityLog: ActivityLog[];
 }

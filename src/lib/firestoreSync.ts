@@ -12,6 +12,7 @@ import type {
   WorkoutLog,
   WeightEntry,
   MeasurementEntry,
+  ActivityLog,
 } from '../types';
 
 export interface CloudData {
@@ -20,6 +21,7 @@ export interface CloudData {
   workoutLog: WorkoutLog[];
   weightLog: WeightEntry[];
   measurements: MeasurementEntry[];
+  activityLog?: ActivityLog[];
   updatedAt: number;
 }
 
