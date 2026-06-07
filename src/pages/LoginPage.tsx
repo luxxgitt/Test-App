@@ -1,44 +1,22 @@
-import { useState, useEffect } from 'react';
-import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { useState } from 'react';
+import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
-
-// iOS PWA standalone mode blocks popups — use redirect only there
-const isIOSStandalone =
-  typeof window !== 'undefined' &&
-  (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // On iOS standalone, handle the redirect result after returning from Google
-  useEffect(() => {
-    if (!isIOSStandalone) return;
-    setLoading(true);
-    getRedirectResult(auth)
-      .then((result) => {
-        if (!result) setLoading(false);
-        // If result exists, onAuthStateChanged in App.tsx takes over
-      })
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : 'Erreur de connexion';
-        setError(msg);
-        setLoading(false);
-      });
-  }, []);
-
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError(null);
     try {
-      if (isIOSStandalone) {
-        await signInWithRedirect(auth, googleProvider);
-      } else {
-        await signInWithPopup(auth, googleProvider);
-      }
+      await signInWithPopup(auth, googleProvider);
+      // onAuthStateChanged in App.tsx handles the rest
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erreur de connexion';
-      if (!(err instanceof Error) || !err.message.includes('popup-closed')) {
+      const code = (err as { code?: string }).code ?? '';
+      // Ignore popup closed by user
+      if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
+        const msg = err instanceof Error ? err.message : 'Erreur de connexion';
         setError(msg);
       }
       setLoading(false);
