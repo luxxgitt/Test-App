@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { X, ExternalLink, CheckCircle, SkipForward, Trophy } from 'lucide-react';
 import RestTimer from './RestTimer';
+import { DurationTimer, RepMetronome } from './ExerciseTimer';
 import { exercises } from '../../data/exercises';
 import { workoutProgram, estimateCaloriesBurned } from '../../data/workoutProgram';
 import type { WorkoutSet } from '../../types';
@@ -78,6 +79,31 @@ export default function WorkoutSession({ weekNumber, dayId, onComplete, onExit }
     { exerciseId: string; setsCompleted: number; repsCompleted: number[] }[]
   >([]);
 
+  // ── Wake lock — prevent screen sleep during session ─────────────────────────
+  const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
+  useEffect(() => {
+    const acquire = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLockRef.current = await (
+            navigator as Navigator & {
+              wakeLock: { request: (type: string) => Promise<{ release: () => Promise<void> }> };
+            }
+          ).wakeLock.request('screen');
+        }
+      } catch {
+        // not supported or permission denied
+      }
+    };
+    acquire();
+    const onVisibility = () => { if (document.visibilityState === 'visible') acquire(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      wakeLockRef.current?.release();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
   const handleRestComplete = useCallback(() => {
     setIsResting(false);
   }, []);
@@ -139,10 +165,6 @@ export default function WorkoutSession({ weekNumber, dayId, onComplete, onExit }
   if (!exercise || !workoutSet) {
     return null;
   }
-
-  const displaySetsReps = workoutSet.durationSeconds
-    ? `${workoutSet.durationSeconds} secondes`
-    : `${workoutSet.reps} répétitions`;
 
   const handleSetDone = () => {
     const currentLog = exerciseLogs.find((l) => l.exerciseId === workoutSet.exerciseId);
@@ -257,15 +279,26 @@ export default function WorkoutSession({ weekNumber, dayId, onComplete, onExit }
               </div>
             </div>
 
-            {/* Set counter */}
-            <div className="bg-card rounded-2xl p-4 text-center">
-              <p className="text-text-secondary text-sm mb-1">
-                Série {currentSet} sur {workoutSet.sets}
+            {/* Set counter + timer */}
+            <div className="bg-card rounded-2xl p-4 text-center flex flex-col items-center gap-4">
+              <p className="text-text-secondary text-sm">
+                Série <span className="text-white font-bold">{currentSet}</span> sur {workoutSet.sets}
+                <span className="text-text-secondary mx-2">·</span>
+                Repos {workoutSet.restSeconds}s
               </p>
-              <p className="text-4xl font-bold text-accent">{displaySetsReps}</p>
-              <p className="text-text-secondary text-xs mt-1">
-                Repos : {workoutSet.restSeconds}s entre les séries
-              </p>
+
+              {workoutSet.durationSeconds ? (
+                <DurationTimer
+                  key={`${workoutSet.exerciseId}-s${currentSet}`}
+                  seconds={workoutSet.durationSeconds}
+                  onComplete={handleSetDone}
+                />
+              ) : (
+                <RepMetronome
+                  key={`${workoutSet.exerciseId}-s${currentSet}`}
+                  reps={workoutSet.reps ?? 10}
+                />
+              )}
             </div>
 
             {/* Description */}
