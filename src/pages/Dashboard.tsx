@@ -78,12 +78,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const currentWeek = getCurrentWeek();
   const completedDates = getCompletedWorkoutDates();
 
-  // Workouts this week (last 7 days)
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - today.getDay() + 1);
-  const weekStartStr = weekStart.toISOString().split('T')[0];
+  // Workouts in the last 7 rolling days
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(today.getDate() - 6);
+  const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
   const trainedThisWeek = workoutLog.filter(
-    (w) => w.completed && w.date >= weekStartStr
+    (w) => w.completed && w.date >= sevenDaysAgoStr
   ).length;
 
   // Current workout to suggest
