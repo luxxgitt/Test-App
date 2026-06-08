@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import WeightChart from '../components/progress/WeightChart';
 import StreakCalendar from '../components/progress/StreakCalendar';
@@ -27,11 +27,25 @@ export default function ProgressPage() {
     weightLog,
     measurements,
     workoutLog,
+    foodLog,
     addWeightEntry,
     addMeasurement,
     getCompletedWorkoutDates,
     getCurrentWeek,
   } = useStore();
+
+  const foodSummaryByDate = useMemo(() => {
+    const summary: Record<string, { calories: number; protein: number; fat: number; carbs: number; entries: number }> = {};
+    for (const entry of foodLog) {
+      if (!summary[entry.date]) summary[entry.date] = { calories: 0, protein: 0, fat: 0, carbs: 0, entries: 0 };
+      summary[entry.date].calories += entry.macros.calories;
+      summary[entry.date].protein += entry.macros.protein;
+      summary[entry.date].fat += entry.macros.fat;
+      summary[entry.date].carbs += entry.macros.carbs;
+      summary[entry.date].entries++;
+    }
+    return summary;
+  }, [foodLog]);
 
   const [activeTab, setActiveTab] = useState<ProgressTab>('poids');
   const [newWeight, setNewWeight] = useState('');
@@ -294,7 +308,11 @@ export default function ProgressPage() {
           </div>
 
           {/* Calendar */}
-          <StreakCalendar completedDates={completedDates} />
+          <StreakCalendar
+            completedDates={completedDates}
+            foodSummaryByDate={foodSummaryByDate}
+            calorieTarget={profile.dailyCalorieTarget}
+          />
 
           {/* Recent workouts */}
           {completedWorkouts.length > 0 && (
