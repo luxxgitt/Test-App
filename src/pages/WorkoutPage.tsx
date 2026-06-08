@@ -383,7 +383,7 @@ export default function WorkoutPage() {
                 const isExpanded = expandedDayId === day.id;
                 const isCompletedToday = useStore
                   .getState()
-                  .workoutLog.some((w) => w.date === todayStr && w.dayId === day.id && w.completed);
+                  .workoutLog.some((w) => w.weekNumber === selectedWeek && w.dayId === day.id && w.completed);
                 const estimatedDuration = estimateWorkoutDuration(dayIndex, selectedWeek);
                 const estimatedCalories = estimateCaloriesBurned(selectedWeek, estimatedDuration);
 
