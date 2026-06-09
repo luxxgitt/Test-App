@@ -1914,6 +1914,11 @@ export const foodDatabase: FoodItem[] = [
   { id: 'dried-fig', nameFR: 'Figue sèche', nameEN: 'Dried Fig', category: 'Fruits', per100g: { calories: 249, protein: 3.3, fat: 0.9, carbs: 63, sugar: 48, fiber: 9.8 } },
   { id: 'dried-apricot', nameFR: 'Abricot sec', nameEN: 'Dried Apricot', category: 'Fruits', per100g: { calories: 241, protein: 3.4, fat: 0.5, carbs: 63, sugar: 53, fiber: 7.3 } },
   { id: 'raisins', nameFR: 'Raisins secs', nameEN: 'Raisins', category: 'Fruits', per100g: { calories: 299, protein: 3.1, fat: 0.5, carbs: 79, sugar: 59, fiber: 3.7 } },
+  { id: 'compote-pomme-ss', nameFR: 'Compote de pomme sans sucre', nameEN: 'Unsweetened Apple Compote', category: 'Fruits', per100g: { calories: 46, protein: 0.2, fat: 0.1, carbs: 11, sugar: 10, fiber: 1.2 } },
+  { id: 'compote-pomme', nameFR: 'Compote de pomme sucrée', nameEN: 'Sweetened Apple Compote', category: 'Fruits', per100g: { calories: 68, protein: 0.2, fat: 0.1, carbs: 17, sugar: 16, fiber: 0.8 } },
+  { id: 'compote-poire', nameFR: 'Compote de poire', nameEN: 'Pear Compote', category: 'Fruits', per100g: { calories: 55, protein: 0.3, fat: 0.1, carbs: 14, sugar: 12, fiber: 1.5 } },
+  { id: 'compote-fruits-rouges', nameFR: 'Compote fruits rouges', nameEN: 'Red Berry Compote', category: 'Fruits', per100g: { calories: 52, protein: 0.4, fat: 0.2, carbs: 13, sugar: 12, fiber: 1.8 } },
+  { id: 'compote-abricot', nameFR: 'Compote d\'abricot', nameEN: 'Apricot Compote', category: 'Fruits', per100g: { calories: 60, protein: 0.5, fat: 0.1, carbs: 15, sugar: 14, fiber: 1.2 } },
 
   // ==================== CÉRÉALES & FÉCULENTS (suite) ====================
   { id: 'rye-bread', nameFR: 'Pain de seigle', nameEN: 'Rye Bread', category: 'Céréales & Féculents', per100g: { calories: 259, protein: 8.5, fat: 3.3, carbs: 48, sugar: 3.9, fiber: 6.2 } },

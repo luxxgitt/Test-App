@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { X, Search, Plus } from 'lucide-react';
 import { foodDatabase } from '../../data/foodDatabase';
 import type { FoodItem, FoodLogEntry } from '../../types';
@@ -23,6 +23,25 @@ export default function FoodSearch({ onClose, onAdd, defaultMeal = 'déjeuner' }
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
   const [quantity, setQuantity] = useState(100);
   const [meal, setMeal] = useState<MealType>(defaultMeal);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const focusInput = useCallback(() => {
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, []);
+
+  useEffect(() => {
+    focusInput();
+  }, [focusInput]);
+
+  const handleBack = () => {
+    setSelectedFood(null);
+    focusInput();
+  };
+
+  const handleClearQuery = () => {
+    setQuery('');
+    focusInput();
+  };
 
   const results = useMemo(() => {
     if (!query.trim()) return foodDatabase.slice(0, 30);
@@ -98,7 +117,7 @@ export default function FoodSearch({ onClose, onAdd, defaultMeal = 'déjeuner' }
         <div className="flex flex-col flex-1 overflow-y-auto">
           <div className="p-4 border-b border-white/10">
             <button
-              onClick={() => setSelectedFood(null)}
+              onClick={handleBack}
               className="text-accent text-sm mb-3 flex items-center gap-1"
             >
               ← Retour
@@ -198,16 +217,20 @@ export default function FoodSearch({ onClose, onAdd, defaultMeal = 'déjeuner' }
             <div className="flex items-center gap-3 bg-white/10 rounded-xl px-3 py-2.5">
               <Search size={16} className="text-text-secondary flex-shrink-0" />
               <input
-                type="text"
+                ref={inputRef}
+                type="search"
+                inputMode="search"
                 placeholder="Rechercher un aliment..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 bg-transparent text-white placeholder-text-secondary text-sm border-0 outline-none"
-                autoFocus
               />
               {query && (
-                <button onClick={() => setQuery('')}>
-                  <X size={14} className="text-text-secondary" />
+                <button
+                  onPointerDown={(e) => { e.preventDefault(); handleClearQuery(); }}
+                  className="p-1"
+                >
+                  <X size={16} className="text-text-secondary" />
                 </button>
               )}
             </div>
@@ -216,8 +239,14 @@ export default function FoodSearch({ onClose, onAdd, defaultMeal = 'déjeuner' }
           {/* Results list */}
           <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
             {results.length === 0 ? (
-              <div className="text-center text-text-secondary py-8">
-                Aucun aliment trouvé
+              <div className="flex flex-col items-center gap-3 py-10">
+                <p className="text-text-secondary text-sm">Aucun aliment trouvé pour «&nbsp;{query}&nbsp;»</p>
+                <button
+                  onPointerDown={(e) => { e.preventDefault(); handleClearQuery(); }}
+                  className="px-4 py-2 rounded-xl bg-white/10 text-accent text-sm font-medium"
+                >
+                  Effacer et réessayer
+                </button>
               </div>
             ) : (
               results.map((food) => (
