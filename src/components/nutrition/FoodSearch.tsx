@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Search, Plus } from 'lucide-react';
 import { foodDatabase } from '../../data/foodDatabase';
 import type { FoodItem, FoodLogEntry } from '../../types';
@@ -70,7 +71,7 @@ export default function FoodSearch({ onClose, onAdd, defaultMeal = 'déjeuner' }
     inputRef.current?.focus();
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: '#0D0D0D' }}>
       {/* Header */}
       <div
@@ -260,6 +261,7 @@ export default function FoodSearch({ onClose, onAdd, defaultMeal = 'déjeuner' }
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
