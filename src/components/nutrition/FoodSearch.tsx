@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { X, Search, Plus } from 'lucide-react';
 import { foodDatabase } from '../../data/foodDatabase';
 import type { FoodItem, FoodLogEntry } from '../../types';
@@ -24,24 +24,6 @@ export default function FoodSearch({ onClose, onAdd, defaultMeal = 'déjeuner' }
   const [quantity, setQuantity] = useState(100);
   const [meal, setMeal] = useState<MealType>(defaultMeal);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const focusInput = useCallback(() => {
-    setTimeout(() => inputRef.current?.focus(), 50);
-  }, []);
-
-  useEffect(() => {
-    focusInput();
-  }, [focusInput]);
-
-  const handleBack = () => {
-    setSelectedFood(null);
-    focusInput();
-  };
-
-  const handleClearQuery = () => {
-    setQuery('');
-    focusInput();
-  };
 
   const results = useMemo(() => {
     if (!query.trim()) return foodDatabase.slice(0, 30);
@@ -78,11 +60,21 @@ export default function FoodSearch({ onClose, onAdd, defaultMeal = 'déjeuner' }
     onClose();
   };
 
+  const handleBack = () => {
+    setSelectedFood(null);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
+  const handleClear = () => {
+    setQuery('');
+    inputRef.current?.focus();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: '#0D0D0D' }}>
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 py-3 border-b border-white/10"
+        className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', backgroundColor: '#1C1C1E' }}
       >
         <h2 className="text-lg font-semibold text-white">Ajouter un aliment</h2>
@@ -96,7 +88,7 @@ export default function FoodSearch({ onClose, onAdd, defaultMeal = 'déjeuner' }
       </div>
 
       {/* Meal selector */}
-      <div className="flex gap-2 px-4 py-3 border-b border-white/10">
+      <div className="flex gap-2 px-4 py-3 border-b border-white/10 flex-shrink-0">
         {mealOptions.map((m) => (
           <button
             key={m.id}
@@ -213,23 +205,20 @@ export default function FoodSearch({ onClose, onAdd, defaultMeal = 'déjeuner' }
         // Search results
         <div className="flex flex-col flex-1 overflow-hidden">
           {/* Search input */}
-          <div className="px-4 py-3">
+          <div className="px-4 py-3 flex-shrink-0">
             <div className="flex items-center gap-3 bg-white/10 rounded-xl px-3 py-2.5">
               <Search size={16} className="text-text-secondary flex-shrink-0" />
               <input
                 ref={inputRef}
-                type="search"
-                inputMode="search"
+                type="text"
                 placeholder="Rechercher un aliment..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 bg-transparent text-white placeholder-text-secondary text-sm border-0 outline-none"
+                autoFocus
               />
-              {query && (
-                <button
-                  onPointerDown={(e) => { e.preventDefault(); handleClearQuery(); }}
-                  className="p-1"
-                >
+              {query.length > 0 && (
+                <button onClick={handleClear} className="p-1 -mr-1">
                   <X size={16} className="text-text-secondary" />
                 </button>
               )}
@@ -239,13 +228,15 @@ export default function FoodSearch({ onClose, onAdd, defaultMeal = 'déjeuner' }
           {/* Results list */}
           <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
             {results.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 py-10">
-                <p className="text-text-secondary text-sm">Aucun aliment trouvé pour «&nbsp;{query}&nbsp;»</p>
+              <div className="flex flex-col items-center gap-4 py-10">
+                <p className="text-text-secondary text-sm text-center">
+                  Aucun résultat pour «{query}»
+                </p>
                 <button
-                  onPointerDown={(e) => { e.preventDefault(); handleClearQuery(); }}
-                  className="px-4 py-2 rounded-xl bg-white/10 text-accent text-sm font-medium"
+                  onClick={handleClear}
+                  className="px-5 py-2.5 rounded-xl bg-white/10 text-white text-sm font-medium"
                 >
-                  Effacer et réessayer
+                  Effacer la recherche
                 </button>
               </div>
             ) : (
