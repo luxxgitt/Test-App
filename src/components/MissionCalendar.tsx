@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { DayPicker } from "react-day-picker";
+import { fr } from "react-day-picker/locale";
 import "react-day-picker/style.css";
 import type { MissionLike, MissionStatus } from "@/lib/types";
 
@@ -78,6 +79,7 @@ export function MissionCalendar<T extends MissionLike>({
         modifiers={modifiers}
         modifiersClassNames={STATUS_COLOR_CLASS}
         showOutsideDays
+        locale={fr}
         weekStartsOn={1}
         className="mx-auto"
       />

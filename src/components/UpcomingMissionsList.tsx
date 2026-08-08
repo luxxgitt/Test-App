@@ -1,3 +1,5 @@
+"use client";
+
 import type { MissionLike } from "@/lib/types";
 import { STATUS_ICONS } from "@/lib/types";
 import { formatMissionDates } from "@/lib/missions";
